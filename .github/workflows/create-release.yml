@@ -316,7 +316,7 @@ jobs:
       id: patched
       if: ${{ steps.download_patched.outputs.output_path != '' }}
       run: |
-        patched=$(jq --compact-output . < "${GITHUB_WORKSPACE}/${{ matrix.arch }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}-previous")
+        patched=$(jq -c . < "${GITHUB_WORKSPACE}/${{ matrix.arch }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}-previous")
         printf "patched=%s\n" "${patched}" >> "$GITHUB_OUTPUT"
 
     - name: Get Stack Distribution Name
@@ -813,7 +813,7 @@ jobs:
       id: get-usns
       if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
       run: |
-        usns=$(cat "patched-usns/${{ matrix.arch }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}" )
+        usns=$(cat "patched-usns/${{ matrix.arch }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}" | jq -c )
         echo "usns=$usns" >> "$GITHUB_OUTPUT"
 
     - name: Get Repository Name
@@ -1145,7 +1145,7 @@ jobs:
           create_build_image=$(echo "$stack" | jq -r '.create_build_image // false')
           run_receipt_filename=$(echo "$stack" | jq -r '.run_receipt_filename')
 
-          assets="$(jq --compact-output \
+          assets="$(jq -c \
             --arg image_filepath "image-files" \
             --arg stack_name "${stack_name}" \
             --arg run_image "${run_image}" \
@@ -1161,7 +1161,7 @@ jobs:
 
           if [[ $create_build_image == true ]]; then
             build_image=$(echo "$stack" | jq -r '.build_image')
-            assets="$(jq --compact-output \
+            assets="$(jq -c \
               --arg image_filepath "image-files" \
               --arg stack_name "${stack_name}" \
               --arg build_image "${build_image}" \
@@ -1185,7 +1185,7 @@ jobs:
             if [ "${{ needs.preparation.outputs.polling_type }}" = "hash" ]; then
               ## Add the Hash code files of the run images to the assets
               run_image=$(echo "$stack" | jq -r '.run_image')
-              assets="$(jq --compact-output \
+              assets="$(jq -c \
                 --arg hash_code_filepath "hash-code-files" \
                 --arg stack_name "${stack_name}" \
                 --arg run_image "${run_image}" \
@@ -1204,7 +1204,7 @@ jobs:
               ## Add the Hash code files of the build images to the assets
               if [[ $create_build_image == true ]]; then
                 build_image=$(echo "$stack" | jq -r '.build_image')
-                assets="$(jq --compact-output \
+                assets="$(jq -c \
                   --arg hash_code_filepath "hash-code-files" \
                   --arg stack_name "${stack_name}" \
                   --arg build_image "${build_image}" \
@@ -1241,7 +1241,7 @@ jobs:
                 jq -r 'map(select(. != "amd64")) | map(select(. != "default")) | join("-")'
             )
 
-            assets="$(jq --compact-output \
+            assets="$(jq -c \
               --arg receipts_filepath "receipt-files" \
               --arg receipt_file_name "${receipt_file_name}" \
               --arg receipt_asset_name "${receipt_asset_name}" \
@@ -1268,7 +1268,7 @@ jobs:
                   jq -r 'map(select(. != "amd64")) | map(select(. != "default")) | join("-")'
               )
 
-              assets="$(jq --compact-output \
+              assets="$(jq -c \
                 --arg receipts_filepath "receipt-files" \
                 --arg receipt_file_name "${receipt_file_name}" \
                 --arg receipt_asset_name "${receipt_asset_name}" \
@@ -1311,7 +1311,7 @@ jobs:
                 ]' | jq -r 'map(select(length > 0)) | join("-")'
               )
 
-              assets="$(jq --compact-output \
+              assets="$(jq -c \
                 --arg usns_filepath "usn-files" \
                 --arg stack_name "${stack_name}" \
                 --arg arch "${arch}" \
@@ -1344,7 +1344,7 @@ jobs:
           done
 
           # add release notes of the arch on the assets
-          assets="$(jq --compact-output \
+          assets="$(jq -c \
             --arg release_notes_dir "${release_notes_dir}" \
             --arg tag "${{ steps.tag.outputs.tag }}" \
             --arg repo "${{ needs.preparation.outputs.github_repo_name }}" \
