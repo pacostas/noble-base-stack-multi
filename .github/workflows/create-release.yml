@@ -360,7 +360,9 @@ jobs:
     - name: Are any new USNs
       id: new_usns
       run: |
-        if [ "${{ steps.usns.outputs.usns }}" != "[]"  ]; then
+        new_usns_length=$(cat "${{ matrix.arch }}-${{ matrix.stacks.name }}-${{ env.PATCHED_USNS_FILENAME }}" | jq 'length')
+
+        if [ "$new_usns_length" -ge 0 ]; then
           echo "usns=true" >> "$GITHUB_OUTPUT"
         fi
 
@@ -806,7 +808,7 @@ jobs:
         tree .
         echo "***********"
         ls -R .
-    
+
     - name: Get USNs
       id: get-usns
       if: ${{ needs.preparation.outputs.polling_type == 'usn' }}
