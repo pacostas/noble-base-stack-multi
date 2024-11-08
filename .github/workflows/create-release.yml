@@ -298,7 +298,7 @@ jobs:
           stack_name_prefix="${{ matrix.stacks.name }}"
         fi
 
-        pattern=$(echo '["\\\\d+.\\\\d+(.\\\\d+)?","'"$stack_name_prefix"'", "'"$arch_prefix"'", "${{ env.PATCHED_USNS_FILENAME }}"]' |  jq -r 'map(select(length > 0)) | join("-")')
+        pattern=$(echo '["\\d+.\\d+(.\\d+)?","'"$stack_name_prefix"'", "'"$arch_prefix"'", "${{ env.PATCHED_USNS_FILENAME }}"]' |  jq -r 'map(select(length > 0)) | join("-")')
 
         echo "pattern=$pattern" >> "$GITHUB_OUTPUT"
 
