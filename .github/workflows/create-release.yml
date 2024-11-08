@@ -1,8 +1,8 @@
 name: Create Release
-
+## TODO uncomment the on schedule cron job
 on:
-  schedule:
-  - cron: '*/30 * * * *'  # every 30 minutes
+  # schedule:
+  # - cron: '*/30 * * * *'  # every 30 minutes
   push:
     branches:
     - main
