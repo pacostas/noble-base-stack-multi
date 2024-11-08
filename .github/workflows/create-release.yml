@@ -203,7 +203,44 @@ jobs:
           echo "run=${{ matrix.arch }}-${{ matrix.stacks.run_receipt_filename }}" >> "$GITHUB_OUTPUT"
         fi
 
+    - name: Check if the stack is newly added
+      id: stack_is_new
+      run: |
+        stack="${{ matrix.stacks.name }}"
+        added_found=$(echo '${{ needs.preparation.outputs.stack_added }}' | jq --arg stack "$stack" 'index($stack)')
+
+        if [ "$added_found" == "null" ]; then
+          echo "added=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "added=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Check if arch on stack has been added
+      id: arch_is_new
+      run: |
+        arch="${{ matrix.arch }}"
+        added_found=$(echo '${{ needs.preparation.outputs.archs_added }}' | jq --arg arch "$arch" 'index($arch)')
+
+        if [ "$added_found" == "null" ]; then
+          echo "added=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "added=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Write Empty Previous Receipts
+      if: ${{ steps.arch_is_new.outputs.added == 'true' || steps.stack_is_new.outputs.added == 'true' }}
+      run: |
+        if [ ${{ matrix.stacks.create_build_image }} == true ]; then
+          if [ ! -f "./${{ matrix.arch }}-previous-build-receipt-${{ matrix.stacks.name }}" ]; then
+            echo '{"components":[]}' > "./${{ matrix.arch }}-previous-build-receipt-${{ matrix.stacks.name }}"
+          fi
+        fi
+        if [ ! -f "./${{ matrix.arch }}-previous-run-receipt-${{ matrix.stacks.name }}" ]; then
+          echo '{"components":[]}' > "./${{ matrix.arch }}-previous-run-receipt-${{ matrix.stacks.name }}"
+        fi
+
     - name: Find and Download Previous Build Receipt
+      if: ${{ steps.arch_is_new.outputs.added == 'false' && steps.stack_is_new.outputs.added == 'false' }}
       id: previous_build
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
@@ -212,8 +249,10 @@ jobs:
         repo: ${{ github.repository }}
         output_path: "/github/workspace/${{ matrix.arch }}-previous-build-receipt-${{ matrix.stacks.name }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        strict: true
 
     - name: Find and Download Previous Run Receipt
+      if: ${{ steps.arch_is_new.outputs.added == 'false' && steps.stack_is_new.outputs.added == 'false' }}
       id: previous_run
       uses: paketo-buildpacks/github-config/actions/release/find-and-download-asset@main
       with:
@@ -222,6 +261,7 @@ jobs:
         repo: ${{ github.repository }}
         output_path: "/github/workspace/${{ matrix.arch }}-previous-run-receipt-${{ matrix.stacks.name }}"
         token: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        strict: true
 
     - name: tree
       run: |
