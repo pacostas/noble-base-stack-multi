@@ -1155,8 +1155,9 @@ jobs:
           fi
 
           for arch in $archs; do
-            arch_prefix="-${arch}-"
-            if [[ $arch == "amd64" ]]; then
+            arch_name=$(echo "$arch" | jq -r '.name')
+            arch_prefix="-${arch_name}-"
+            if [[ $arch_name == "amd64" ]]; then
               arch_prefix="-"
             fi
 
@@ -1169,7 +1170,7 @@ jobs:
                 --arg run_image "${run_image}" \
                 --arg tag "${{ steps.tag.outputs.tag }}" \
                 --arg repo "${{ needs.preparation.outputs.github_repo_name }}" \
-                --arg arch "${arch}" \
+                --arg arch "${arch_name}" \
                 --arg arch_prefix "${arch_prefix}" \
                 '. += [
                   {
@@ -1188,7 +1189,7 @@ jobs:
                   --arg build_image "${build_image}" \
                   --arg tag "${{ steps.tag.outputs.tag }}" \
                   --arg repo "${{ needs.preparation.outputs.github_repo_name }}" \
-                  --arg arch "${arch}" \
+                  --arg arch "${arch_name}" \
                   --arg arch_prefix "${arch_prefix}" \
                   '. += [
                     {
@@ -1205,17 +1206,18 @@ jobs:
         ## Adding the SBOM files to the assets
         for stack in $stacks; do
           for arch in $archs; do
+            arch_name=$(echo "$arch" | jq -r '.name')
 
             stack_name=$(echo "$stack" | jq -r '.name')
             run_receipt_filename=$(echo "$stack" | jq -r '.run_receipt_filename')
 
             receipt_file_name=$(
-              echo '[ "'"$arch"'" ,"current-run-receipt" , "'"$stack_name"'"  ]' |
+              echo '[ "'"$arch_name"'" ,"current-run-receipt" , "'"$stack_name"'"  ]' |
                 jq -r 'map(select(. != "amd64")) | join("-")'
             )
 
             receipt_asset_name=$(
-              echo '[ "'"$repo"'", "'"$tag"'", "'"$arch"'", "'"$run_receipt_filename"'"  ]' |
+              echo '[ "'"$repo"'", "'"$tag"'", "'"$arch_name"'", "'"$run_receipt_filename"'"  ]' |
                 jq -r 'map(select(. != "amd64")) | map(select(. != "default")) | join("-")'
             )
 
@@ -1237,12 +1239,12 @@ jobs:
               build_receipt_filename=$(echo "$stack" | jq -r '.build_receipt_filename')
 
               receipt_file_name=$(
-                echo '[ "'"$arch"'" ,"current-build-receipt" , "'"$stack_name"'"  ]' |
+                echo '[ "'"$arch_name"'" ,"current-build-receipt" , "'"$stack_name"'"  ]' |
                   jq -r 'map(select(. != "amd64")) | join("-")'
               )
 
               receipt_asset_name=$(
-                echo '[ "'"$repo"'", "'"$tag"'", "'"$arch"'", "'"$build_receipt_filename"'"  ]' |
+                echo '[ "'"$repo"'", "'"$tag"'", "'"$arch_name"'", "'"$build_receipt_filename"'"  ]' |
                   jq -r 'map(select(. != "amd64")) | map(select(. != "default")) | join("-")'
               )
 
@@ -1274,8 +1276,9 @@ jobs:
             fi
 
             for arch in $archs; do
-              arch_prefix="${arch}"
-              if [[ $arch == "amd64" ]]; then
+              arch_name=$(echo "$arch" | jq -r '.name')
+              arch_prefix="${arch_name}"
+              if [[ $arch_name == "amd64" ]]; then
                 arch_prefix=""
               fi
 
@@ -1292,7 +1295,7 @@ jobs:
               assets="$(jq -c \
                 --arg usns_filepath "usn-files" \
                 --arg stack_name "${stack_name}" \
-                --arg arch "${arch}" \
+                --arg arch "${arch_name}" \
                 --arg usn_asset_name "${usn_asset_name}" \
                 --arg patched_usns_suffix "${{ env.PATCHED_USNS_FILENAME }}" \
                 '. += [
@@ -1309,16 +1312,17 @@ jobs:
         # Merge relase notes per architecture and add them to the assets
         release_notes_dir="release-notes"
         for arch in $archs; do
-          arch_prefix="-${arch}-"
-          if [[ $arch == "amd64" ]]; then
+          arch_name=$(echo "$arch" | jq -r '.name')
+          arch_prefix="-${arch_name}-"
+          if [[ $arch_name == "amd64" ]]; then
             arch_prefix="-"
           fi
 
           # Merge the release notes per architecture
           for stack in $stacks; do
             stack_name=$(echo "$stack" | jq -r '.name')
-            filename="${arch}-${stack_name}-release-notes.md"
-            cat "${release_notes_dir}/${filename}" >>"${release_notes_dir}/${arch}-release-notes"
+            filename="${arch_name}-${stack_name}-release-notes.md"
+            cat "${release_notes_dir}/${filename}" >>"${release_notes_dir}/${arch_name}-release-notes"
           done
 
           # add release notes of the arch on the assets
@@ -1326,7 +1330,7 @@ jobs:
             --arg release_notes_dir "${release_notes_dir}" \
             --arg tag "${{ steps.tag.outputs.tag }}" \
             --arg repo "${{ needs.preparation.outputs.github_repo_name }}" \
-            --arg arch "${arch}" \
+            --arg arch "${arch_name}" \
             --arg arch_prefix "${arch_prefix}" \
             '. += [
               {
@@ -1341,8 +1345,8 @@ jobs:
         # add this as a relase notes description
         archs_length=$(echo '${{ needs.preparation.outputs.architectures }}' | jq 'length')
         if [ $archs_length -eq 1 ]; then
-          arch=$(echo '${{ needs.preparation.outputs.architectures }}' | jq -r '.[0]')
-          cat "${release_notes_dir}/${arch}-release-notes" > release_notes.md
+          arch_name=$(echo '${{ needs.preparation.outputs.architectures }}' | jq -r '.[0].name')
+          cat "${release_notes_dir}/${arch_name}-release-notes" > release_notes.md
         fi
 
         echo "assets=${assets}" >> "$GITHUB_OUTPUT"
